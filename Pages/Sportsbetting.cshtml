@@ -1,0 +1,271 @@
+﻿@page
+@model WebApplication1.Pages.SportsbettingModel
+<h1 style="text-align: center;">Luxury Sports Betting - Horse Racing</h1>
+
+<div class="container">
+    <div class="stats">
+        <div>
+            <h2>Credit</h2>
+            <p id="credit">100</p>
+        </div>
+        <div>
+            <h2>Last Bet</h2>
+            <p id="last-bet">-</p>
+        </div>
+        <div>
+            <h2>Total Wins</h2>
+            <p id="wins">0</p>
+        </div>
+    </div>
+
+    <div id="race-field" class="race-field">
+        <div class="line" id="start-line">Start</div>
+        <div class="line" id="finish-line">Finish</div>
+        <div class="horse" id="horse1">🐎 Horse 1</div>
+        <div class="horse" id="horse2">🐎 Horse 2</div>
+        <div class="horse" id="horse3">🐎 Horse 3</div>
+        <div class="horse" id="horse4">🐎 Horse 4</div>
+        <div class="horse" id="horse5">🐎 Horse 5</div>
+        <div class="horse" id="horse6">🐎 Horse 6</div>
+    </div>
+
+    <div class="controls">
+        <div>
+            <label for="bet-amount">Bet Amount</label>
+            <input type="number" id="bet-amount" min="1" max="100" placeholder="Enter bet amount" />
+        </div>
+        <div>
+            <label for="bet-option">Bet on Horse</label>
+            <select id="bet-option">
+                <option value="1">Horse 1</option>
+                <option value="2">Horse 2</option>
+                <option value="3">Horse 3</option>
+                <option value="4">Horse 4</option>
+                <option value="5">Horse 5</option>
+                <option value="6">Horse 6</option>
+            </select>
+        </div>
+        <div>
+            <button id="place-bet-button" class="btn">Place Bet</button>
+        </div>
+    </div>
+
+    <div class="bet-result" id="bet-result">Place your bet to start the race!</div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let credit = 100;
+            let wins = 0;
+
+            const creditDisplay = document.getElementById('credit');
+            const winsDisplay = document.getElementById('wins');
+            const lastBetDisplay = document.getElementById('last-bet');
+            const resultDisplay = document.getElementById('bet-result');
+            const raceField = document.getElementById('race-field');
+            const horses = document.querySelectorAll('.horse');
+
+            document.getElementById('place-bet-button').addEventListener('click', function () {
+                const betAmount = parseInt(document.getElementById('bet-amount').value);
+                const betOption = parseInt(document.getElementById('bet-option').value);
+
+                if (!betAmount || betAmount > credit || betAmount <= 0) {
+                    alert('Invalid bet amount!');
+                    return;
+                }
+
+                startRace(betAmount, betOption);
+            });
+
+            function startRace(betAmount, betOption) {
+                const raceFieldWidth = raceField.offsetWidth; // Dynamically calculate field width
+                const finishLinePosition = raceFieldWidth - 100; // Adjust for horse size
+
+                resultDisplay.textContent = "Race is on!";
+                resultDisplay.style.color = "#fff";
+
+                horses.forEach(horse => {
+                    horse.style.transform = 'translateX(0)';
+                });
+
+                const raceResults = [];
+                horses.forEach((horse, index) => {
+                    const raceTime = Math.random() * 5000 + 3000; // Random time between 3 and 8 seconds
+                    raceResults.push({ horse: index + 1, time: raceTime });
+
+                    setTimeout(() => {
+                        horse.style.transition = `${raceTime}ms linear`;
+                        horse.style.transform = `translateX(${finishLinePosition}px)`; // Move to finish line
+                    }, 100);
+                });
+
+                setTimeout(() => {
+                    raceResults.sort((a, b) => a.time - b.time);
+                    const winner = raceResults[0].horse;
+
+                    if (winner === betOption) {
+                        credit += betAmount;
+                        wins++;
+                        resultDisplay.textContent = `You won! Winner: Horse ${winner}`;
+                        resultDisplay.style.color = 'lightgreen';
+                    } else {
+                        credit -= betAmount;
+                        resultDisplay.textContent = `You lost! Winner: Horse ${winner}`;
+                        resultDisplay.style.color = 'red';
+                    }
+
+                    // Update stats
+                    creditDisplay.textContent = credit;
+                    lastBetDisplay.textContent = betAmount;
+                    winsDisplay.textContent = wins;
+
+                    if (credit <= 0) {
+                        alert('Game over! You are out of credit.');
+                        resetGame();
+                    } else {
+                        resetHorses();
+                    }
+                }, 8000);
+            }
+
+            function resetHorses() {
+                horses.forEach(horse => {
+                    horse.style.transition = "none";
+                    horse.style.transform = 'translateX(0)';
+                });
+            }
+
+            function resetGame() {
+                credit = 100;
+                wins = 0;
+                creditDisplay.textContent = credit;
+                winsDisplay.textContent = wins;
+                lastBetDisplay.textContent = '-';
+                resultDisplay.textContent = 'Game reset! Place your bet to start again.';
+                resultDisplay.style.color = '#fff';
+                resetHorses();
+            }
+        });
+    </script>
+}
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(to bottom, #1e3c72, #2a5298);
+        color: #fff;
+        margin: 0;
+        padding: 0;
+    }
+
+    h1 {
+        text-align: center;
+        margin: 20px 0;
+    }
+
+    .container {
+        max-width: 800px;
+        margin: auto;
+        padding: 20px;
+    }
+
+    .stats, .controls {
+        display: flex;
+        justify-content: space-between;
+        margin: 20px 0;
+    }
+
+        .stats div, .controls div {
+            background: #3b5998;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            flex: 1;
+            margin: 0 5px;
+        }
+
+            .controls div input, .controls div button, .controls div select {
+                width: 100%;
+                padding: 10px;
+                font-size: 1rem;
+                margin-top: 10px;
+                border: none;
+                border-radius: 8px;
+            }
+
+    .btn {
+        background-color: #ff5722;
+        color: #fff;
+        cursor: pointer;
+    }
+
+        .btn:hover {
+            background-color: #e64a19;
+        }
+
+    .race-field {
+        margin: 30px 0;
+        padding: 20px;
+        background: #444;
+        border-radius: 8px;
+        position: relative;
+        height: 200px;
+        overflow: hidden;
+        border: 2px solid #fff;
+    }
+
+    .line {
+        position: absolute;
+        width: 10%;
+        height: 100%;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    #start-line {
+        left: 0;
+        top: 0;
+    }
+
+    #finish-line {
+        right: 0;
+        top: 0;
+    }
+
+    .horse {
+        position: absolute;
+        left: 0;
+        font-size: 1.5rem;
+        white-space: nowrap;
+        transition: transform 3s ease;
+    }
+
+    #horse1 {
+        top: 10px;
+    }
+
+    #horse2 {
+        top: 40px;
+    }
+
+    #horse3 {
+        top: 70px;
+    }
+
+    #horse4 {
+        top: 100px;
+    }
+
+    #horse5 {
+        top: 130px;
+    }
+
+    #horse6 {
+        top: 160px;
+    }
+</style>

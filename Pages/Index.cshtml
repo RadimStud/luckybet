@@ -1,0 +1,544 @@
+﻿@page
+@model WebApplication1.Pages.IndexModel
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milion Lux Gold Diamond Casino</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: radial-gradient(circle, #000000, #333333, #FFD700);
+            font-family: 'Cinzel', serif;
+            color: #FFD700;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3rem;
+            text-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700;
+            margin-top: 2rem;
+        }
+
+        .luxury-symbols {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+            .luxury-symbols span {
+                font-size: 5rem;
+                cursor: pointer;
+                transition: transform 0.3s ease, color 0.3s ease;
+            }
+
+                .luxury-symbols span:hover {
+                    transform: scale(1.2) rotate(15deg);
+                }
+
+        .game-button {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background-color: #FFD700;
+            border: none;
+            color: #000;
+            font-size: 1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: color 0.3s ease, background-color 0.3s ease;
+            margin: 1rem;
+            border-radius: 5px;
+        }
+
+            .game-button:hover {
+                background-color: #000;
+                color: #FFF;
+            }
+
+        canvas {
+            display: none;
+            margin: 1rem auto;
+            border: 2px solid #FFD700;
+        }
+
+        #pexeso-board {
+            display: none;
+            margin: 1rem auto;
+            max-width: 400px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+
+        .pexeso-card {
+            width: 80px;
+            height: 80px;
+            background-color: #FFD700;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+            .pexeso-card.flipped {
+                background-color: #FFF;
+                color: #FFD700;
+            }
+    </style>
+</head>
+
+<body>
+    <h1>Milion Lux Gold Diamond Casino 💎✨</h1>
+
+    <div class="luxury-symbols">
+        <span>💎</span>
+        <span>💰</span>
+        <span>✨</span>
+        <span>🎰</span>
+        <span>🥂</span>
+        <span>👑</span>
+        <span>🕶️</span>
+        <span>💵</span>
+    </div>
+
+    <button class="game-button" onclick="startPexeso()">Začít Pexeso</button>
+    <button class="game-button" onclick="startSnake()">Začít Snake</button>
+    <button class="game-button" onclick="startInvaders()">Začít Invaders</button>
+    <canvas id="invaders-canvas" width="800" height="600"></canvas>
+
+
+    <div id="pexeso-board"></div>
+    <canvas id="snake-canvas" width="400" height="400"></canvas>
+    <canvas id="invaders-canvas" width="800" height="600"></canvas>
+
+
+    <script>
+        function hideAllGames() {
+            document.getElementById("pexeso-board").style.display = "none";
+            document.getElementById("snake-canvas").style.display = "none";
+            document.getElementById("invaders-canvas").style.display = "none";
+        }
+
+        // Pexeso
+        function startPexeso() {
+            hideAllGames();
+            const board = document.getElementById("pexeso-board");
+            board.style.display = "grid";
+            board.innerHTML = "";
+
+            const symbols = ["💎", "💰", "✨", "🎰", "🥂", "👑", "🕶️", "💵"];
+            const deck = [...symbols, ...symbols].sort(() => Math.random() - 0.5);
+            let flippedCards = [];
+
+            deck.forEach(symbol => {
+                const card = document.createElement("div");
+                card.className = "pexeso-card";
+                card.dataset.symbol = symbol;
+
+                card.addEventListener("click", () => {
+                    if (flippedCards.length < 2 && !card.classList.contains("flipped")) {
+                        card.textContent = symbol;
+                        card.classList.add("flipped");
+                        flippedCards.push(card);
+
+                        if (flippedCards.length === 2) {
+                            setTimeout(() => {
+                                if (flippedCards[0].dataset.symbol === flippedCards[1].dataset.symbol) {
+                                    flippedCards.forEach(c => c.style.visibility = "hidden");
+                                } else {
+                                    flippedCards.forEach(c => {
+                                        c.textContent = "";
+                                        c.classList.remove("flipped");
+                                    });
+                                }
+                                flippedCards = [];
+                            }, 1000);
+                        }
+                    }
+                });
+
+                board.appendChild(card);
+            });
+        }
+
+                let snakeInterval = null; // Globální proměnná pro interval hry Snake
+
+        function startSnake() {
+            hideAllGames();
+
+            const canvas = document.getElementById("snake-canvas");
+            canvas.style.display = "block";
+            const ctx = canvas.getContext("2d");
+
+            // Ukončení předchozího intervalu hry Snake
+            if (snakeInterval) {
+                clearInterval(snakeInterval);
+                snakeInterval = null; // Reset intervalu
+            }
+
+            let snake = [{ x: 200, y: 200 }];
+            let direction = { x: 0, y: 0 };
+            let food;
+
+            function generateFood() {
+                let isOnSnake;
+                do {
+                    food = {
+                        x: Math.floor(Math.random() * (canvas.width / 20)) * 20,
+                        y: Math.floor(Math.random() * (canvas.height / 20)) * 20
+                    };
+                    isOnSnake = snake.some(segment => segment.x === food.x && segment.y === food.y);
+                } while (isOnSnake);
+            }
+
+            generateFood(); // Inicializace potravy při spuštění
+
+            function drawSnake() {
+                ctx.fillStyle = "#FFD700";
+                snake.forEach(segment => ctx.fillRect(segment.x, segment.y, 20, 20));
+            }
+
+            function drawFood() {
+                ctx.fillStyle = "#FF0000";
+                ctx.fillRect(food.x, food.y, 20, 20);
+            }
+
+            function moveSnake() {
+                const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+                snake.unshift(head);
+
+                if (head.x === food.x && head.y === food.y) {
+                    generateFood(); // Vygenerovat novou potravu
+                } else {
+                    snake.pop();
+                }
+
+                if (
+                    head.x < 0 || head.x >= canvas.width ||
+                    head.y < 0 || head.y >= canvas.height ||
+                    snake.slice(1).some(segment => segment.x === head.x && segment.y === head.y)
+                ) {
+                    // Reset hry po kolizi
+                    snake = [{ x: 200, y: 200 }];
+                    direction = { x: 0, y: 0 };
+                    generateFood(); // Reset potravy
+                }
+            }
+
+            function gameLoop() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                drawFood();
+                drawSnake();
+                moveSnake();
+            }
+
+            // Události pro ovládání směru hada
+            window.addEventListener("keydown", event => {
+                if (event.key === "ArrowUp" && direction.y === 0) direction = { x: 0, y: -20 };
+                if (event.key === "ArrowDown" && direction.y === 0) direction = { x: 0, y: 20 };
+                if (event.key === "ArrowLeft" && direction.x === 0) direction = { x: -20, y: 0 };
+                if (event.key === "ArrowRight" && direction.x === 0) direction = { x: 20, y: 0 };
+            });
+
+            // Spuštění nového herního cyklu
+            snakeInterval = setInterval(gameLoop, 100);
+        }
+
+
+        function startInvaders() {
+
+                     hideAllGames();
+
+            const canvas = document.getElementById("invaders-canvas");
+                    canvas.style.display = "block";
+                    const ctx = canvas.getContext("2d");
+
+
+                    const player = {
+                        x: canvas.width / 2 - 30,
+                        y: canvas.height - 30,
+                        width: 60,
+                        height: 30,
+                        bullets: [],
+                        speed: 5,
+                        color: "#FFD700",
+                        lives: 3
+                    };
+
+                    const allShapes = [
+                        "circle", "triangle", "square", "star", "pentagon", "hexagon", "arrow", "cross", "diamond", "shield"
+                    ]; // Sada unikátních tvarů
+
+                    // Zajištění dostatku tvarů pro větší počet nepřátel
+                    const invaderShapes = [...allShapes, ...allShapes, ...allShapes];
+
+                    // Vytvoření 4 vrstev, každá s 10 nepřáteli
+                    const invaders = Array.from({ length: 4 }, (_, row) =>
+                        Array.from({ length: 10 }, (_, col) => ({
+                            x: col * 70 + 20,
+                            y: row * 50 + 20,
+                            width: 40,
+                            height: 40,
+                            shape: invaderShapes.splice(Math.floor(Math.random() * invaderShapes.length), 1)[0], // Jedinečný tvar
+                            color: `hsl(${Math.random() * 360}, 100%, 50%)`,
+                            isAlive: true,
+                            bullets: []
+                        }))
+                    ).flat();
+
+                    let invaderDirection = 1;
+                    let moveDown = false;
+                    let gameRunning = true;
+
+                    function drawPlayer() {
+                        ctx.fillStyle = player.color;
+                        ctx.beginPath();
+                        ctx.moveTo(player.x, player.y);
+                        ctx.lineTo(player.x + player.width / 2, player.y - 20);
+                        ctx.lineTo(player.x + player.width, player.y);
+                        ctx.lineTo(player.x + player.width * 0.75, player.y + 10);
+                        ctx.lineTo(player.x + player.width * 0.25, player.y + 10);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+
+                    function drawShape(shape, x, y, size, color) {
+                        ctx.fillStyle = color;
+                        ctx.beginPath();
+                        switch (shape) {
+                            case "circle":
+                                ctx.arc(x, y, size / 2, 0, Math.PI * 2);
+                                break;
+                            case "triangle":
+                                ctx.moveTo(x, y - size / 2);
+                                ctx.lineTo(x + size / 2, y + size / 2);
+                                ctx.lineTo(x - size / 2, y + size / 2);
+                                break;
+                            case "square":
+                                ctx.rect(x - size / 2, y - size / 2, size, size);
+                                break;
+                            case "star":
+                                for (let i = 0; i < 5; i++) {
+                                    const angle = i * (Math.PI * 2) / 5;
+                                    const nextAngle = angle + Math.PI / 5;
+                                    ctx.lineTo(x + Math.cos(angle) * size / 2, y + Math.sin(angle) * size / 2);
+                                    ctx.lineTo(x + Math.cos(nextAngle) * size / 4, y + Math.sin(nextAngle) * size / 4);
+                                }
+                                break;
+                            case "pentagon":
+                                for (let i = 0; i < 5; i++) {
+                                    const angle = i * (Math.PI * 2) / 5;
+                                    ctx.lineTo(x + Math.cos(angle) * size / 2, y + Math.sin(angle) * size / 2);
+                                }
+                                break;
+                            case "hexagon":
+                                for (let i = 0; i < 6; i++) {
+                                    const angle = i * (Math.PI * 2) / 6;
+                                    ctx.lineTo(x + Math.cos(angle) * size / 2, y + Math.sin(angle) * size / 2);
+                                }
+                                break;
+                            case "arrow":
+                                ctx.moveTo(x, y - size / 2);
+                                ctx.lineTo(x + size / 4, y - size / 4);
+                                ctx.lineTo(x + size / 4, y + size / 2);
+                                ctx.lineTo(x - size / 4, y + size / 2);
+                                ctx.lineTo(x - size / 4, y - size / 4);
+                                break;
+                            case "cross":
+                                ctx.moveTo(x - size / 2, y - size / 6);
+                                ctx.lineTo(x + size / 2, y - size / 6);
+                                ctx.lineTo(x + size / 6, y - size / 2);
+                                ctx.lineTo(x + size / 6, y + size / 2);
+                                ctx.lineTo(x - size / 6, y + size / 2);
+                                ctx.lineTo(x - size / 6, y - size / 6);
+                                break;
+                            case "diamond":
+                                ctx.moveTo(x, y - size / 2);
+                                ctx.lineTo(x + size / 2, y);
+                                ctx.lineTo(x, y + size / 2);
+                                ctx.lineTo(x - size / 2, y);
+                                break;
+                            case "shield":
+                                ctx.moveTo(x, y - size / 2);
+                                ctx.arcTo(x + size / 2, y, x, y + size / 2, size / 2);
+                                ctx.arcTo(x - size / 2, y, x, y - size / 2, size / 2);
+                                break;
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+
+                    function drawInvaders() {
+                        invaders.forEach(invader => {
+                            if (invader.isAlive) {
+                                drawShape(invader.shape, invader.x, invader.y, invader.width, invader.color);
+                            }
+                        });
+                    }
+
+                    function drawBullets() {
+                        ctx.fillStyle = "#FFFFFF";
+                        player.bullets.forEach(bullet => ctx.fillRect(bullet.x, bullet.y, 5, 10));
+
+                        invaders.forEach(invader => {
+                            ctx.fillStyle = invader.color;
+                            invader.bullets.forEach(bullet => ctx.fillRect(bullet.x, bullet.y, 5, 10));
+                        });
+                    }
+
+                    function movePlayer() {
+                        if (player.moveLeft && player.x > 0) player.x -= player.speed;
+                        if (player.moveRight && player.x + player.width < canvas.width) player.x += player.speed;
+                    }
+
+                    function firePlayerBullet() {
+                        if (gameRunning) {
+                            player.bullets.push({
+                                x: player.x + player.width / 2 - 2.5,
+                                y: player.y - 10,
+                                width: 5,
+                                height: 10
+                            });
+                        }
+                    }
+
+                    function fireInvaderBullet() {
+                        const shootingInvaders = invaders.filter(invader => invader.isAlive);
+                        if (shootingInvaders.length > 0) {
+                            const invader = shootingInvaders[Math.floor(Math.random() * shootingInvaders.length)];
+                            invader.bullets.push({
+                                x: invader.x,
+                                y: invader.y + invader.height / 2,
+                                width: 5,
+                                height: 10
+                            });
+                        }
+                    }
+
+                    function moveBullets() {
+                              player.bullets.forEach((bullet, index) => {
+                    bullet.y -= 5;
+
+                    invaders.forEach(invader => {
+                        if (
+                            invader.isAlive &&
+                            bullet.x > invader.x - invader.width / 2 &&
+                            bullet.x < invader.x + invader.width / 2 &&
+                            bullet.y > invader.y - invader.height / 2 &&
+                            bullet.y < invader.y + invader.height / 2
+                        ) {
+                            invader.isAlive = false;
+                            player.bullets.splice(index, 1);
+                        }
+                    });
+
+                    if (bullet.y < 0) player.bullets.splice(index, 1);
+                });
+
+                invaders.forEach(invader => {
+                    invader.bullets.forEach((bullet, index) => {
+                        bullet.y += 5;
+
+                        if (
+                            bullet.x > player.x &&
+                            bullet.x < player.x + player.width &&
+                            bullet.y > player.y - 20 &&
+                            bullet.y < player.y
+                        ) {
+                            // Hra končí okamžitě po zásahu hráče
+                            endGame("lose");
+                        }
+
+                        if (bullet.y > canvas.height) invader.bullets.splice(index, 1);
+                    });
+                });
+                    }
+
+                    function moveInvaders() {
+                        let edgeReached = false;
+
+                        invaders.forEach(invader => {
+                            if (invader.isAlive) {
+                                invader.x += invaderDirection * 2;
+                                if (
+                                    invader.x - invader.width / 2 <= 0 ||
+                                    invader.x + invader.width / 2 >= canvas.width
+                                ) {
+                                    edgeReached = true;
+                                }
+                            }
+                        });
+
+                        if (edgeReached) {
+                            invaderDirection *= -1;
+                            moveDown = true;
+                        }
+
+                        if (moveDown) {
+                            invaders.forEach(invader => {
+                                if (invader.isAlive) invader.y += 20;
+                                if (invader.isAlive && invader.y + invader.height / 2 >= player.y) {
+                                    endGame("lose");
+                                }
+                            });
+                            moveDown = false;
+                        }
+                    }
+
+                    function endGame(result) {
+                        gameRunning = false;
+                        ctx.font = "20px Cinzel";
+                        ctx.fillStyle = "#FFD700";
+                        const text =
+                            result === "win"
+                                ? "Vyhrál jsi! Všechny nepřátelské lodě byly zničeny!"
+                                : "Prohrál jsi! Nepřátelé ovládli tvou loď!";
+                        ctx.fillText(text, canvas.width / 2 - ctx.measureText(text).width / 2, canvas.height / 2);
+                    }
+
+                    function gameLoop() {
+                        if (!gameRunning) return;
+
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        drawPlayer();
+                        drawInvaders();
+                        drawBullets();
+                        movePlayer();
+                        moveBullets();
+                        moveInvaders();
+
+                        if (invaders.every(invader => !invader.isAlive)) {
+                            endGame("win");
+                        }
+
+                        requestAnimationFrame(gameLoop);
+                    }
+
+                    window.addEventListener("keydown", event => {
+                        if (event.key === "ArrowLeft") player.moveLeft = true;
+                        if (event.key === "ArrowRight") player.moveRight = true;
+                        if (event.key === "0") firePlayerBullet();
+                    });
+
+                    window.addEventListener("keyup", event => {
+                        if (event.key === "ArrowLeft") player.moveLeft = false;
+                        if (event.key === "ArrowRight") player.moveRight = false;
+                    });
+
+                    setInterval(fireInvaderBullet, 1000);
+                    setInterval(() => (player.color = `hsl(${Math.random() * 360}, 100%, 50%)`), 1000); // Každou sekundu mění barvu hráčova loď
+                    gameLoop();
+                }
+    </script>
+</body>
+</html>

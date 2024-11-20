@@ -1,0 +1,212 @@
+﻿@page
+@model WebApplication1.Pages.lotteryModel
+
+<h1 style="text-align: center; color: #e67e22; font-family: 'Comic Sans MS', cursive;">Funky Jazz Sportka 🎷</h1>
+
+<div class="container">
+    <div class="credit-system">
+        <h2>Credit: <span id="credit">100</span> 🎰</h2>
+        <p>Each game costs 10 credits. Jackpot doubles your credit!</p>
+    </div>
+
+    <div class="pick-numbers">
+        <h2>Pick Your Numbers (1-49)</h2>
+        <div id="user-numbers" class="number-selection">
+            <input type="text" maxlength="2" value="1" class="user-number" />
+            <input type="text" maxlength="2" value="2" class="user-number" />
+            <input type="text" maxlength="2" value="3" class="user-number" />
+            <input type="text" maxlength="2" value="4" class="user-number" />
+            <input type="text" maxlength="2" value="5" class="user-number" />
+            <input type="text" maxlength="2" value="6" class="user-number" />
+        </div>
+        <button id="submit-numbers" class="btn">Play Now</button>
+    </div>
+
+    <div class="lottery-draw">
+        <h2>Winning Numbers</h2>
+        <div id="winning-numbers" class="number-display">
+            <span class="number">-</span>
+            <span class="number">-</span>
+            <span class="number">-</span>
+            <span class="number">-</span>
+            <span class="number">-</span>
+            <span class="number">-</span>
+        </div>
+    </div>
+
+    <div class="result">
+        <h2>Result</h2>
+        <div id="result-display">Press "Play Now" to begin!</div>
+    </div>
+
+    <div class="simulation">
+        <h2>Simulate All Combinations 🎷</h2>
+        <button id="simulate-button" class="btn">Simulate 13,983,816 Games</button>
+        <p id="simulation-result">No simulation yet.</p>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let credit = 100;
+
+        // Auto-start game on page load
+        window.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("submit-numbers").click();
+        });
+
+        // Game logic
+        document.getElementById("submit-numbers").addEventListener("click", function () {
+            if (credit < 10) {
+                document.getElementById("result-display").textContent = "Not enough credits! Add more to play.";
+                document.getElementById("result-display").style.color = "#e74c3c";
+                return;
+            }
+
+            credit -= 10;
+            updateCreditDisplay();
+
+            const userNumbers = Array.from(document.querySelectorAll(".user-number"))
+                .map(input => parseInt(input.value))
+                .filter(num => !isNaN(num) && num >= 1 && num <= 49);
+
+            if (userNumbers.length !== 6 || new Set(userNumbers).size !== 6) {
+                document.getElementById("result-display").textContent = "Please ensure all numbers are unique and between 1-49.";
+                document.getElementById("result-display").style.color = "#e74c3c";
+                return;
+            }
+
+            const winningNumbers = generateWinningNumbers();
+            displayWinningNumbers(winningNumbers);
+
+            const matches = userNumbers.filter(num => winningNumbers.includes(num));
+            const matchCount = matches.length;
+
+            if (matchCount === 6) {
+                credit *= 2; // Jackpot doubles the credit
+                document.getElementById("result-display").textContent = `Jackpot! Matched 6 numbers: ${matches.join(", ")}`;
+                document.getElementById("result-display").style.color = "#f1c40f";
+            } else if (matchCount > 0) {
+                document.getElementById("result-display").textContent = `You matched ${matchCount} number(s): ${matches.join(", ")}`;
+                document.getElementById("result-display").style.color = "#2ecc71";
+            } else {
+                document.getElementById("result-display").textContent = "No matches. Better luck next time!";
+                document.getElementById("result-display").style.color = "#e74c3c";
+            }
+
+            updateCreditDisplay();
+        });
+
+        // Simulate all combinations
+        document.getElementById("simulate-button").addEventListener("click", function () {
+            const totalGames = 13983816;
+            let jackpotCount = 0;
+
+            for (let i = 0; i < totalGames; i++) {
+                const userNumbers = generateWinningNumbers();
+                const winningNumbers = generateWinningNumbers();
+
+                const matches = userNumbers.filter(num => winningNumbers.includes(num));
+                if (matches.length === 6) {
+                    jackpotCount++;
+                }
+            }
+
+            document.getElementById("simulation-result").textContent = `Out of 13,983,816 games, ${jackpotCount} jackpots were found! 🎷`;
+            document.getElementById("simulation-result").style.color = "#f1c40f";
+        });
+
+        function generateWinningNumbers() {
+            const numbers = [];
+            while (numbers.length < 6) {
+                const num = Math.floor(Math.random() * 49) + 1;
+                if (!numbers.includes(num)) {
+                    numbers.push(num);
+                }
+            }
+            return numbers.sort((a, b) => a - b);
+        }
+
+        function displayWinningNumbers(winningNumbers) {
+            const winningNumbersDisplay = document.getElementById("winning-numbers");
+            winningNumbersDisplay.innerHTML = winningNumbers.map(num => `<span class="number">${num}</span>`).join("");
+        }
+
+        function updateCreditDisplay() {
+            document.getElementById("credit").textContent = credit;
+        }
+    </script>
+}
+
+<style>
+    body {
+        font-family: "Comic Sans MS", Arial, sans-serif;
+        background: radial-gradient(circle, #2c3e50, #34495e);
+        color: #fff;
+        margin: 0;
+        padding: 0;
+    }
+
+    h1 {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 3rem;
+        text-shadow: 0 4px 6px rgba(0, 0, 0, 0.7);
+    }
+
+    .container {
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+        text-align: center;
+        background: #1abc9c;
+        border-radius: 20px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+        font-family: "Comic Sans MS", cursive;
+    }
+
+    .number-selection, .number-display {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .user-number, .number {
+        width: 60px;
+        height: 60px;
+        text-align: center;
+        font-size: 1.5rem;
+        border-radius: 50%;
+        border: 3px solid #f39c12;
+        background: #ecf0f1;
+        color: #2c3e50;
+        outline: none;
+    }
+
+        .user-number:focus {
+            border-color: #e74c3c;
+        }
+
+    .btn {
+        margin-top: 20px;
+        padding: 15px 30px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #fff;
+        background: #e74c3c;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+
+        .btn:hover {
+            background: #c0392b;
+        }
+
+    .result, .simulation {
+        font-size: 1.2rem;
+        margin-top: 30px;
+    }
+</style>

@@ -1,0 +1,283 @@
+﻿@page
+@model WebApplication1.Pages.VLTModel
+
+<div class="container">
+    <div class="slot-machine-container">
+        <h1 class="casino-title">🎰 VLT - Fruit Machine 🎰</h1>
+        <div class="slot-machine">
+            <!-- Kredit a sázka -->
+            <div class="stats">
+                <p><strong>Kredit:</strong> <span id="credit">1000</span> Kč</p>
+                <p>
+                    <strong>Sázka:</strong>
+                    <select id="bet">
+                        <option value="50">50 Kč</option>
+                        <option value="100">100 Kč</option>
+                        <option value="200">200 Kč</option>
+                    </select>
+                </p>
+            </div>
+
+            <!-- Pole válců -->
+            <div id="reels" class="reels">
+                <div class="reel">
+                    <span class="slot">🍒</span>
+                    <span class="slot">🍋</span>
+                    <span class="slot">🍉</span>
+                </div>
+                <div class="reel">
+                    <span class="slot">🍎</span>
+                    <span class="slot">🎲</span>
+                    <span class="slot">🍇</span>
+                </div>
+                <div class="reel">
+                    <span class="slot">🍋</span>
+                    <span class="slot">🍒</span>
+                    <span class="slot">🍉</span>
+                </div>
+            </div>
+
+            <!-- Ovládací prvky -->
+            <div class="controls">
+                <button id="spinButton" class="button" onclick="spinReels()">🎰 Roztočit válce 🎰</button>
+                <button id="autostartButton" class="button" onclick="toggleAutostart()">Autostart</button>
+            </div>
+
+            <!-- Dobití kreditu -->
+            <div class="add-credit">
+                <input type="number" id="creditInput" class="input" placeholder="Částka na dobití" min="1" />
+                <button id="addCreditButton" class="button" onclick="addCredit()">Dobít kredit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiky -->
+    <div class="statistics">
+        <h2>Statistiky</h2>
+        <ul>
+            <li><strong>Celková výhra:</strong> <span id="totalWin">0</span> Kč</li>
+            <li><strong>Celková prohra:</strong> <span id="totalLoss">0</span> Kč</li>
+            <li><strong>Maximální výhra:</strong> <span id="maxWin">0</span> Kč</li>
+            <li><strong>Počet kol:</strong> <span id="spinCount">0</span></li>
+            <li><strong>Výherní procento:</strong> <span id="winPercentage">0</span> %</li>
+            <li><strong>Očekávané výherní procento:</strong> <span id="expectedWinPercentage">50</span> %</li>
+        </ul>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let credit = 1000; // Počáteční kredit
+        let autostart = false; // Stav Autostartu
+        let autostartInterval;
+
+        // Statistiky
+        let totalWin = 0;
+        let totalLoss = 0;
+        let maxWin = 0;
+        let spinCount = 0;
+        let winCount = 0;
+        let expectedWinPercentage = 50; // Nastavené procento výhernosti
+
+        function spinReels() {
+            const symbols = ["🍎", "🍒", "🍋", "🍉", "🍇", "🎲"]; // Symbol žolíka
+            const reels = document.querySelectorAll(".reel");
+            const bet = parseInt(document.getElementById("bet").value);
+            const creditElement = document.getElementById("credit");
+
+            if (credit < bet) {
+                alert("Nemáte dostatek kreditu!");
+                return;
+            }
+
+            spinCount++;
+            credit -= bet;
+            creditElement.textContent = credit;
+
+            reels.forEach(reel => {
+                const slots = reel.querySelectorAll(".slot");
+                let interval = setInterval(() => {
+                    slots.forEach(slot => {
+                        slot.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                    });
+                }, 100);
+
+                setTimeout(() => {
+                    clearInterval(interval);
+                    slots.forEach(slot => {
+                        slot.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+                    });
+                }, 2000);
+            });
+
+            setTimeout(() => {
+                const winnings = Math.random() < expectedWinPercentage / 100 ? calculateWinnings(bet) : 0;
+
+                if (winnings > 0) {
+                    totalWin += winnings;
+                    winCount++;
+                    maxWin = Math.max(maxWin, winnings);
+                    credit += winnings;
+                } else {
+                    totalLoss += bet;
+                }
+
+                creditElement.textContent = credit;
+                updateStatistics();
+            }, 2000);
+        }
+
+        function calculateWinnings(bet) {
+            return bet * 3; // Výpočet výhry
+        }
+
+        function updateStatistics() {
+            document.getElementById("totalWin").textContent = totalWin;
+            document.getElementById("totalLoss").textContent = totalLoss;
+            document.getElementById("maxWin").textContent = maxWin;
+            document.getElementById("spinCount").textContent = spinCount;
+            document.getElementById("winPercentage").textContent = ((winCount / spinCount) * 100).toFixed(2);
+        }
+
+        function addCredit() {
+            const creditInput = parseInt(document.getElementById("creditInput").value);
+            if (isNaN(creditInput) || creditInput <= 0) {
+                alert("Zadejte platnou částku!");
+                return;
+            }
+            credit += creditInput;
+            document.getElementById("credit").textContent = credit;
+            document.getElementById("creditInput").value = "";
+        }
+
+        function toggleAutostart() {
+            const autostartButton = document.getElementById("autostartButton");
+            if (!autostart) {
+                autostart = true;
+                autostartButton.textContent = "Stop Autostart";
+                autostartInterval = setInterval(spinReels, 3000);
+            } else {
+                autostart = false;
+                autostartButton.textContent = "Autostart";
+                clearInterval(autostartInterval);
+            }
+        }
+    </script>
+}
+
+<style>
+    body {
+        background: radial-gradient(circle, #222 0%, #000 100%);
+        color: #fff;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column; /* Přidá flexibilní směrování */
+        min-height: 100vh; /* Zajištění minimální výšky stránky */
+    }
+
+    .container {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        max-width: 1200px;
+        margin: 20px auto; /* Přidání automatického zarovnání a odsazení */
+        padding: 20px; /* Přidání vnějšího prostoru */
+        gap: 20px; /* Větší mezera mezi prvky */
+    }
+
+    .slot-machine-container {
+        flex: 3; /* Umožňuje slot-machine-container přizpůsobit velikost podle prostoru */
+        background: #111;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px #ffcc00;
+        text-align: center;
+    }
+
+    .reels {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        padding: 20px;
+        background: #000;
+        border-radius: 10px;
+        box-shadow: inset 0 0 15px #ffcc00;
+    }
+
+    .reel {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .slot {
+        width: 70px;
+        height: 70px;
+        background: #fff;
+        color: #000;
+        font-size: 2rem;
+        text-align: center;
+        line-height: 70px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px #ffcc00;
+        transition: transform 0.3s ease; /* Přidání animace */
+    }
+
+        .slot:hover {
+            transform: scale(1.1); /* Mírné zvětšení při najetí myší */
+        }
+
+    .controls, .add-credit {
+        margin-top: 20px;
+    }
+
+    .button {
+        background: #ffcc00;
+        border: none;
+        padding: 10px 20px;
+        font-size: 1rem;
+        cursor: pointer;
+        margin: 5px;
+        border-radius: 5px;
+        transition: background 0.3s, color 0.3s; /* Plynulý přechod barev */
+    }
+
+        .button:hover {
+            background: #fff;
+            color: #000;
+        }
+
+    .statistics {
+        flex: 1; /* Statistiky budou zabírat menší část prostoru */
+        background: #222;
+        padding: 20px;
+        border-radius: 10px;
+        color: #fff;
+        box-shadow: 0 0 10px #ffcc00;
+    }
+
+        .statistics ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .statistics li {
+            margin-bottom: 10px;
+            font-size: 1rem; /* Lehce větší text pro lepší čitelnost */
+        }
+
+    /* Patička stránky */
+    footer {
+        text-align: right;
+        padding: 400px;
+        background: #111;
+        color: #fff;
+        font-size: 0.9rem;
+        box-shadow: 0 -2px 10px rgba(255, 204, 0, 0.5);
+    }
+
+</style>
